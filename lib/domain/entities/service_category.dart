@@ -72,6 +72,41 @@ class ServiceCategory extends Equatable {
         order,
         metadata,
       ];
+
+  factory ServiceCategory.fromApiJson(Map<String, dynamic> json) {
+    return ServiceCategory(
+      id: json['id'],
+      name: json['name'],
+      nameAr: json['name_ar'],
+      description: json['description'],
+      descriptionAr: json['description_ar'],
+      iconUrl: json['icon_url'],
+      parentId: json['parent_id'],
+      subcategories: (json['subcategories'] as List?)
+          ?.map((e) => ServiceCategory.fromApiJson(e as Map<String, dynamic>))
+          .toList() ??
+          [],
+      isActive: json['is_active'],
+      order: json['order'],
+      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'name_ar': nameAr,
+      'description': description,
+      'description_ar': descriptionAr,
+      'icon_url': iconUrl,
+      'parent_id': parentId,
+      'subcategories': subcategories.map((e) => e.toJson()).toList(),
+      'is_active': isActive,
+      'order': order,
+      'metadata': metadata,
+    };
+  }
 }
 
 class Service extends Equatable {

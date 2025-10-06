@@ -21,6 +21,46 @@ class User extends Equatable {
   final bool isPhoneVerified;
   final Map<String, dynamic> preferences;
 
+  factory User.fromApiJson(Map<String, dynamic> json) {
+    return User(
+      id: json["id"],
+      email: json["email"],
+      firstName: json["firstName"],
+      lastName: json["lastName"],
+      phoneNumber: json["phoneNumber"],
+      profileImageUrl: json["profileImageUrl"],
+      userType: UserType.values.firstWhere((e) => e.toString() == 'UserType.' + json["userType"]),
+      status: UserStatus.values.firstWhere((e) => e.toString() == 'UserStatus.' + json["status"]),
+      createdAt: DateTime.parse(json["createdAt"]),
+      updatedAt: DateTime.parse(json["updatedAt"]),
+      profile: json["profile"] != null ? UserProfile.fromApiJson(json["profile"]) : null,
+      deviceTokens: List<String>.from(json["deviceTokens"] ?? []),
+      isEmailVerified: json["isEmailVerified"] ?? false,
+      isPhoneVerified: json["isPhoneVerified"] ?? false,
+      preferences: Map<String, dynamic>.from(json["preferences"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "email": email,
+      "firstName": firstName,
+      "lastName": lastName,
+      "phoneNumber": phoneNumber,
+      "profileImageUrl": profileImageUrl,
+      "userType": userType.toString().split(".").last,
+      "status": status.toString().split(".").last,
+      "createdAt": createdAt.toIso8601String(),
+      "updatedAt": updatedAt.toIso8601String(),
+      "profile": profile?.toJson(),
+      "deviceTokens": deviceTokens,
+      "isEmailVerified": isEmailVerified,
+      "isPhoneVerified": isPhoneVerified,
+      "preferences": preferences,
+    };
+  }
+
   const User({
     required this.id,
     required this.email,
@@ -115,6 +155,40 @@ class UserProfile extends Equatable {
   final ClientProfile? clientProfile;
   final ServiceProviderProfile? serviceProviderProfile;
 
+  factory UserProfile.fromApiJson(Map<String, dynamic> json) {
+    return UserProfile(
+      bio: json["bio"],
+      address: json["address"],
+      latitude: json["latitude"],
+      longitude: json["longitude"],
+      city: json["city"],
+      country: json["country"],
+      dateOfBirth: json["dateOfBirth"] != null ? DateTime.parse(json["dateOfBirth"]) : null,
+      gender: json["gender"],
+      languages: List<String>.from(json["languages"] ?? []),
+      socialLinks: Map<String, dynamic>.from(json["socialLinks"] ?? {}),
+      clientProfile: json["clientProfile"] != null ? ClientProfile.fromApiJson(json["clientProfile"]) : null,
+      serviceProviderProfile: json["serviceProviderProfile"] != null ? ServiceProviderProfile.fromApiJson(json["serviceProviderProfile"]) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "bio": bio,
+      "address": address,
+      "latitude": latitude,
+      "longitude": longitude,
+      "city": city,
+      "country": country,
+      "dateOfBirth": dateOfBirth?.toIso8601String(),
+      "gender": gender,
+      "languages": languages,
+      "socialLinks": socialLinks,
+      "clientProfile": clientProfile?.toJson(),
+      "serviceProviderProfile": serviceProviderProfile?.toJson(),
+    };
+  }
+
   const UserProfile({
     this.bio,
     this.address,
@@ -185,6 +259,28 @@ class ClientProfile extends Equatable {
   final List<String> preferredCategories;
   final Map<String, dynamic> paymentMethods;
 
+  factory ClientProfile.fromApiJson(Map<String, dynamic> json) {
+    return ClientProfile(
+      totalProjects: json["totalProjects"] ?? 0,
+      totalSpent: (json["totalSpent"] as num?)?.toDouble() ?? 0.0,
+      averageRating: (json["averageRating"] as num?)?.toDouble() ?? 0.0,
+      completedProjects: json["completedProjects"] ?? 0,
+      preferredCategories: List<String>.from(json["preferredCategories"] ?? []),
+      paymentMethods: Map<String, dynamic>.from(json["paymentMethods"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "totalProjects": totalProjects,
+      "totalSpent": totalSpent,
+      "averageRating": averageRating,
+      "completedProjects": completedProjects,
+      "preferredCategories": preferredCategories,
+      "paymentMethods": paymentMethods,
+    };
+  }
+
   const ClientProfile({
     this.totalProjects = 0,
     this.totalSpent = 0.0,
@@ -238,6 +334,44 @@ class ServiceProviderProfile extends Equatable {
   final String? availability;
   final double responseTime; // in hours
   final List<String> workingAreas;
+
+  factory ServiceProviderProfile.fromApiJson(Map<String, dynamic> json) {
+    return ServiceProviderProfile(
+      skills: List<String>.from(json["skills"] ?? []),
+      categories: List<String>.from(json["categories"] ?? []),
+      hourlyRate: (json["hourlyRate"] as num?)?.toDouble() ?? 0.0,
+      portfolio: json["portfolio"],
+      certifications: List<String>.from(json["certifications"] ?? []),
+      yearsOfExperience: json["yearsOfExperience"] ?? 0,
+      averageRating: (json["averageRating"] as num?)?.toDouble() ?? 0.0,
+      totalReviews: json["totalReviews"] ?? 0,
+      completedJobs: json["completedJobs"] ?? 0,
+      totalEarnings: (json["totalEarnings"] as num?)?.toDouble() ?? 0.0,
+      isAvailable: json["isAvailable"] ?? true,
+      availability: json["availability"],
+      responseTime: (json["responseTime"] as num?)?.toDouble() ?? 24.0,
+      workingAreas: List<String>.from(json["workingAreas"] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "skills": skills,
+      "categories": categories,
+      "hourlyRate": hourlyRate,
+      "portfolio": portfolio,
+      "certifications": certifications,
+      "yearsOfExperience": yearsOfExperience,
+      "averageRating": averageRating,
+      "totalReviews": totalReviews,
+      "completedJobs": completedJobs,
+      "totalEarnings": totalEarnings,
+      "isAvailable": isAvailable,
+      "availability": availability,
+      "responseTime": responseTime,
+      "workingAreas": workingAreas,
+    };
+  }
 
   const ServiceProviderProfile({
     this.skills = const [],

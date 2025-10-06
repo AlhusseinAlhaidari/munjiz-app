@@ -27,6 +27,7 @@ class AppTheme {
   // Neutral Colors
   static const Color dividerColor = Color(0xFFE0E0E0);
   static const Color shadowColor = Color(0x1A000000);
+  static const Color borderColor = Color(0xFFE0E0E0); // Added for consistency with dividerColor
   
   // Gradient Colors
   static const LinearGradient primaryGradient = LinearGradient(
@@ -111,7 +112,6 @@ class AppTheme {
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: primaryTextColor,
-        onBackground: primaryTextColor,
         onError: Colors.white,
       ),
       
@@ -131,12 +131,12 @@ class AppTheme {
       ),
       
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: const CardTheme(
         color: cardColor,
         elevation: 2,
         shadowColor: shadowColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.all(Radius.circular(12)),
         ),
       ),
       
@@ -254,7 +254,6 @@ class AppTheme {
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: Colors.white,
-        onBackground: Colors.white,
         onError: Colors.white,
       ),
       fontFamily: 'Cairo',

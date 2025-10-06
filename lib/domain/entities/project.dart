@@ -38,6 +38,62 @@ class Project extends Equatable {
   final List<ProjectMilestone> milestones;
   final Map<String, dynamic> metadata;
 
+  factory Project.fromApiJson(Map<String, dynamic> json) {
+    return Project(
+      id: json["id"],
+      title: json["title"],
+      description: json["description"],
+      clientId: json["clientId"],
+      categoryId: json["categoryId"],
+      status: ProjectStatus.values.firstWhere((e) => e.toString() == 'ProjectStatus.' + json["status"]),
+      priority: ProjectPriority.values.firstWhere((e) => e.toString() == 'ProjectPriority.' + json["priority"]),
+      type: ProjectType.values.firstWhere((e) => e.toString() == 'ProjectType.' + json["type"]),
+      budget: (json["budget"] as num).toDouble(),
+      currency: json["currency"] ?? 'SAR',
+      startDate: json["startDate"] != null ? DateTime.parse(json["startDate"]) : null,
+      endDate: json["endDate"] != null ? DateTime.parse(json["endDate"]) : null,
+      createdAt: DateTime.parse(json["createdAt"]),
+      updatedAt: DateTime.parse(json["updatedAt"]),
+      tags: List<String>.from(json["tags"] ?? []),
+      attachments: List<String>.from(json["attachments"] ?? []),
+      location: json["location"] != null ? ProjectLocation.fromApiJson(json["location"]) : null,
+      tasks: (json["tasks"] as List<dynamic>?)?.map((e) => ProjectTask.fromApiJson(e)).toList() ?? [],
+      bids: (json["bids"] as List<dynamic>?)?.map((e) => ProjectBid.fromApiJson(e)).toList() ?? [],
+      assignedProviders: List<String>.from(json["assignedProviders"] ?? []),
+      payment: json["payment"] != null ? ProjectPayment.fromApiJson(json["payment"]) : null,
+      milestones: (json["milestones"] as List<dynamic>?)?.map((e) => ProjectMilestone.fromApiJson(e)).toList() ?? [],
+      metadata: Map<String, dynamic>.from(json["metadata"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "title": title,
+      "description": description,
+      "clientId": clientId,
+      "categoryId": categoryId,
+      "status": status.toString().split('.').last,
+      "priority": priority.toString().split('.').last,
+      "type": type.toString().split('.').last,
+      "budget": budget,
+      "currency": currency,
+      "startDate": startDate?.toIso8601String(),
+      "endDate": endDate?.toIso8601String(),
+      "createdAt": createdAt.toIso8601String(),
+      "updatedAt": updatedAt.toIso8601String(),
+      "tags": tags,
+      "attachments": attachments,
+      "location": location?.toJson(),
+      "tasks": tasks.map((e) => e.toJson()).toList(),
+      "bids": bids.map((e) => e.toJson()).toList(),
+      "assignedProviders": assignedProviders,
+      "payment": payment?.toJson(),
+      "milestones": milestones.map((e) => e.toJson()).toList(),
+      "metadata": metadata,
+    };
+  }
+
   const Project({
     required this.id,
     required this.title,
@@ -164,6 +220,30 @@ class ProjectLocation extends Equatable {
   final String? postalCode;
   final bool isRemote;
 
+  factory ProjectLocation.fromApiJson(Map<String, dynamic> json) {
+    return ProjectLocation(
+      address: json["address"],
+      latitude: (json["latitude"] as num).toDouble(),
+      longitude: (json["longitude"] as num).toDouble(),
+      city: json["city"],
+      country: json["country"],
+      postalCode: json["postalCode"],
+      isRemote: json["isRemote"] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "address": address,
+      "latitude": latitude,
+      "longitude": longitude,
+      "city": city,
+      "country": country,
+      "postalCode": postalCode,
+      "isRemote": isRemote,
+    };
+  }
+
   const ProjectLocation({
     required this.address,
     required this.latitude,
@@ -218,6 +298,34 @@ class ProjectTask extends Equatable {
   final int order;
   final List<String> dependencies;
   final Map<String, dynamic> metadata;
+
+  factory ProjectTask.fromApiJson(Map<String, dynamic> json) {
+    return ProjectTask(
+      id: json["id"],
+      title: json["title"],
+      description: json["description"],
+      status: TaskStatus.values.firstWhere((e) => e.toString() == 'TaskStatus.' + json["status"]),
+      dueDate: json["dueDate"] != null ? DateTime.parse(json["dueDate"]) : null,
+      assignedTo: json["assignedTo"],
+      order: json["order"],
+      dependencies: List<String>.from(json["dependencies"] ?? []),
+      metadata: Map<String, dynamic>.from(json["metadata"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "title": title,
+      "description": description,
+      "status": status.toString().split(".").last,
+      "dueDate": dueDate?.toIso8601String(),
+      "assignedTo": assignedTo,
+      "order": order,
+      "dependencies": dependencies,
+      "metadata": metadata,
+    };
+  }
 
   const ProjectTask({
     required this.id,
@@ -289,6 +397,40 @@ class ProjectBid extends Equatable {
   final DateTime? respondedAt;
   final List<String> attachments;
   final Map<String, dynamic> metadata;
+
+  factory ProjectBid.fromApiJson(Map<String, dynamic> json) {
+    return ProjectBid(
+      id: json["id"],
+      projectId: json["projectId"],
+      providerId: json["providerId"],
+      amount: (json["amount"] as num).toDouble(),
+      currency: json["currency"] ?? 'SAR',
+      proposal: json["proposal"],
+      estimatedDays: json["estimatedDays"],
+      status: BidStatus.values.firstWhere((e) => e.toString() == 'BidStatus.' + json["status"]),
+      createdAt: DateTime.parse(json["createdAt"]),
+      respondedAt: json["respondedAt"] != null ? DateTime.parse(json["respondedAt"]) : null,
+      attachments: List<String>.from(json["attachments"] ?? []),
+      metadata: Map<String, dynamic>.from(json["metadata"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "projectId": projectId,
+      "providerId": providerId,
+      "amount": amount,
+      "currency": currency,
+      "proposal": proposal,
+      "estimatedDays": estimatedDays,
+      "status": status.toString().split('.').last,
+      "createdAt": createdAt.toIso8601String(),
+      "respondedAt": respondedAt?.toIso8601String(),
+      "attachments": attachments,
+      "metadata": metadata,
+    };
+  }
 
   const ProjectBid({
     required this.id,
@@ -369,6 +511,36 @@ class ProjectPayment extends Equatable {
   final DateTime? releasedAt;
   final Map<String, dynamic> metadata;
 
+  factory ProjectPayment.fromApiJson(Map<String, dynamic> json) {
+    return ProjectPayment(
+      id: json["id"],
+      projectId: json["projectId"],
+      amount: (json["amount"] as num).toDouble(),
+      currency: json["currency"] ?? 'SAR',
+      status: PaymentStatus.values.firstWhere((e) => e.toString() == 'PaymentStatus.' + json["status"]),
+      paymentMethodId: json["paymentMethodId"],
+      escrowId: json["escrowId"],
+      paidAt: json["paidAt"] != null ? DateTime.parse(json["paidAt"]) : null,
+      releasedAt: json["releasedAt"] != null ? DateTime.parse(json["releasedAt"]) : null,
+      metadata: Map<String, dynamic>.from(json["metadata"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "projectId": projectId,
+      "amount": amount,
+      "currency": currency,
+      "status": status.toString().split('.').last,
+      "paymentMethodId": paymentMethodId,
+      "escrowId": escrowId,
+      "paidAt": paidAt?.toIso8601String(),
+      "releasedAt": releasedAt?.toIso8601String(),
+      "metadata": metadata,
+    };
+  }
+
   const ProjectPayment({
     required this.id,
     required this.projectId,
@@ -440,6 +612,38 @@ class ProjectMilestone extends Equatable {
   final int order;
   final List<String> deliverables;
   final Map<String, dynamic> metadata;
+
+  factory ProjectMilestone.fromApiJson(Map<String, dynamic> json) {
+    return ProjectMilestone(
+      id: json["id"],
+      title: json["title"],
+      description: json["description"],
+      amount: (json["amount"] as num).toDouble(),
+      status: MilestoneStatus.values.firstWhere((e) => e.toString() == 'MilestoneStatus.' + json["status"]),
+      dueDate: json["dueDate"] != null ? DateTime.parse(json["dueDate"]) : null,
+      completedAt: json["completedAt"] != null ? DateTime.parse(json["completedAt"]) : null,
+      approvedAt: json["approvedAt"] != null ? DateTime.parse(json["approvedAt"]) : null,
+      order: json["order"],
+      deliverables: List<String>.from(json["deliverables"] ?? []),
+      metadata: Map<String, dynamic>.from(json["metadata"] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "title": title,
+      "description": description,
+      "amount": amount,
+      "status": status.toString().split('.').last,
+      "dueDate": dueDate?.toIso8601String(),
+      "completedAt": completedAt?.toIso8601String(),
+      "approvedAt": approvedAt?.toIso8601String(),
+      "order": order,
+      "deliverables": deliverables,
+      "metadata": metadata,
+    };
+  }
 
   const ProjectMilestone({
     required this.id,
