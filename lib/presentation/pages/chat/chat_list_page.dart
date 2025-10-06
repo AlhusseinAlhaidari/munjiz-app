@@ -12,6 +12,8 @@ class ChatListPage extends StatefulWidget {
   State<ChatListPage> createState() => _ChatListPageState();
 }
 
+
+
 class _ChatListPageState extends State<ChatListPage> {
   final _searchController = TextEditingController();
   List<Chat> _chats = [];
@@ -20,7 +22,7 @@ class _ChatListPageState extends State<ChatListPage> {
   @override
   void initState() {
     super.initState();
-    _loadChats();
+    context.read<ChatBloc>().add(const ChatLoadRequested(userId: 'current_user')); // Assuming 'current_user' is the logged-in user ID
     _searchController.addListener(_filterChats);
   }
 
@@ -28,78 +30,6 @@ class _ChatListPageState extends State<ChatListPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _loadChats() {
-    // Mock chat data
-    _chats = [
-      Chat(
-        id: '1',
-        projectId: 'project_1',
-        participants: ['current_user', 'provider_1'],
-        lastMessage: Message(
-          id: 'msg_1',
-          senderId: 'provider_1',
-          content: 'مرحباً، شاهدت مشروعك وأنا مهتم بتنفيذه',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-          type: MessageType.text,
-        ),
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(minutes: 30)),
-        isActive: true,
-        unreadCount: 2,
-        metadata: {
-          'providerName': 'أحمد محمد',
-          'providerAvatar': 'avatar1.jpg',
-          'projectTitle': 'تنظيف شقة 3 غرف',
-        },
-      ),
-      Chat(
-        id: '2',
-        projectId: 'project_2',
-        participants: ['current_user', 'provider_2'],
-        lastMessage: Message(
-          id: 'msg_2',
-          senderId: 'current_user',
-          content: 'شكراً لك، متى يمكنك البدء؟',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          type: MessageType.text,
-        ),
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        isActive: true,
-        unreadCount: 0,
-        metadata: {
-          'providerName': 'سارة أحمد',
-          'providerAvatar': 'avatar2.jpg',
-          'projectTitle': 'إصلاح مكيف الهواء',
-        },
-      ),
-      Chat(
-        id: '3',
-        projectId: 'project_3',
-        participants: ['current_user', 'provider_3'],
-        lastMessage: Message(
-          id: 'msg_3',
-          senderId: 'provider_3',
-          content: 'تم إنجاز العمل بنجاح، أرجو التقييم',
-          timestamp: DateTime.now().subtract(const Duration(days: 1)),
-          type: MessageType.text,
-        ),
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-        isActive: false,
-        unreadCount: 1,
-        metadata: {
-          'providerName': 'محمد علي',
-          'providerAvatar': 'avatar3.jpg',
-          'projectTitle': 'دهان غرفة المعيشة',
-        },
-      ),
-    ];
-    
-    _filteredChats = List.from(_chats);
-    setState(() {});
   }
 
   void _filterChats() {
@@ -115,10 +45,20 @@ class _ChatListPageState extends State<ChatListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<ChatBloc, ChatState>(
+      listener: (context, state) {
+        if (state is ChatListLoaded) {
+          _chats = state.chats;
+          _filteredChats = List.from(_chats);
+        } else if (state is ChatError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error loading chats: ${state.failure.message}')),
+          );
+        }
+      },
       builder: (context, state) {
         return LoadingOverlay(
-          isLoading: state is AuthLoading,
+          isLoading: state is ChatLoading,
           child: Scaffold(
             appBar: AppBar(
               title: const Text('المحادثات'),
@@ -127,7 +67,6 @@ class _ChatListPageState extends State<ChatListPage> {
               actions: [
                 IconButton(
                   onPressed: () {
-                    // Start new chat
                     _showNewChatDialog();
                   },
                   icon: const Icon(Icons.add_comment),
@@ -136,10 +75,7 @@ class _ChatListPageState extends State<ChatListPage> {
             ),
             body: Column(
               children: [
-                // Search Bar
                 _buildSearchBar(),
-                
-                // Chat List
                 Expanded(
                   child: _filteredChats.isEmpty
                       ? _buildEmptyState()
@@ -241,7 +177,7 @@ class _ChatListPageState extends State<ChatListPage> {
     final providerName = chat.metadata['providerName'] as String;
     final projectTitle = chat.metadata['projectTitle'] as String;
     final lastMessage = chat.lastMessage;
-    final isUnread = chat.unreadCount > 0;
+    final isUnread = chat.getUnreadCount("current_user") > 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -333,7 +269,7 @@ class _ChatListPageState extends State<ChatListPage> {
                             ),
                           ),
                           Text(
-                            _formatTime(lastMessage.timestamp),
+                            _formatTime(lastMessage?.createdAt ?? DateTime.now()),
                             style: TextStyle(
                               fontSize: 12,
                               color: isUnread ? AppTheme.primaryColor : Colors.grey[600],
@@ -356,10 +292,10 @@ class _ChatListPageState extends State<ChatListPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              lastMessage.content,
+                              lastMessage?.content ?? '',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: isUnread ? AppTheme.textColor : Colors.grey[600],
+                                color: isUnread ? AppTheme.primaryTextColor : Colors.grey[600],
                                 fontWeight: isUnread ? FontWeight.w500 : FontWeight.normal,
                               ),
                               maxLines: 1,
@@ -375,7 +311,7 @@ class _ChatListPageState extends State<ChatListPage> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                chat.unreadCount.toString(),
+                                chat.getUnreadCount("current_user").toString(),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,

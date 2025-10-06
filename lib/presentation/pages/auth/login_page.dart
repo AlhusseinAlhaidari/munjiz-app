@@ -19,6 +19,8 @@ class _LoginPageState extends State<LoginPage>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   
   late TabController _tabController;
   bool _isPasswordVisible = false;
@@ -35,6 +37,8 @@ class _LoginPageState extends State<LoginPage>
     _tabController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     super.dispose();
   }
 
@@ -59,8 +63,8 @@ class _LoginPageState extends State<LoginPage>
         AuthRegisterRequested(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          firstName: 'مستخدم', // This should come from form
-          lastName: 'جديد', // This should come from form
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
           userType: _selectedUserType,
         ),
       );
@@ -269,79 +273,125 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildRegisterForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // User Type Selection
-        Text(
-          'نوع الحساب',
-          style: AppTheme.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: RadioListTile<UserType>(
-                title: const Text('عميل'),
-                value: UserType.client,
-                groupValue: _selectedUserType,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedUserType = value!;
-                  });
-                },
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // User Type Selection
+          Text(
+            'نوع الحساب',
+            style: AppTheme.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: RadioListTile<UserType>(
+                  title: const Text('عميل'),
+                  value: UserType.client,
+                  groupValue: _selectedUserType,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedUserType = value!;
+                    });
+                  },
+                ),
               ),
-            ),
-            Expanded(
-              child: RadioListTile<UserType>(
-                title: const Text('مقدم خدمة'),
-                value: UserType.serviceProvider,
-                groupValue: _selectedUserType,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedUserType = value!;
-                  });
-                },
+              Expanded(
+                child: RadioListTile<UserType>(
+                  title: const Text('مقدم خدمة'),
+                  value: UserType.serviceProvider,
+                  groupValue: _selectedUserType,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedUserType = value!;
+                    });
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        CustomTextField(
-          controller: _emailController,
-          label: 'البريد الإلكتروني',
-          keyboardType: TextInputType.emailAddress,
-          prefixIcon: Icons.email_outlined,
-        ),
-        
-        const SizedBox(height: 16),
-        
-        CustomTextField(
-          controller: _passwordController,
-          label: 'كلمة المرور',
-          obscureText: !_isPasswordVisible,
-          prefixIcon: Icons.lock_outlined,
-          suffixIcon: IconButton(
-            icon: Icon(
-              _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-            ),
-            onPressed: () {
-              setState(() {
-                _isPasswordVisible = !_isPasswordVisible;
-              });
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+
+          CustomTextField(
+            controller: _firstNameController,
+            label: 'الاسم الأول',
+            prefixIcon: Icons.person_outline,
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return 'يرجى إدخال الاسم الأول';
+              }
+              return null;
             },
           ),
-        ),
-        
-        const SizedBox(height: 24),
-        
-        CustomButton(
-          text: 'إنشاء حساب',
-          onPressed: _handleRegister,
-        ),
-      ],
+          const SizedBox(height: 16),
+          CustomTextField(
+            controller: _lastNameController,
+            label: 'الاسم الأخير',
+            prefixIcon: Icons.person_outline,
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return 'يرجى إدخال الاسم الأخير';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          
+          CustomTextField(
+            controller: _emailController,
+            label: 'البريد الإلكتروني',
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: Icons.email_outlined,
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return 'يرجى إدخال البريد الإلكتروني';
+              }
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+                return 'يرجى إدخال بريد إلكتروني صحيح';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          CustomTextField(
+            controller: _passwordController,
+            label: 'كلمة المرور',
+            obscureText: !_isPasswordVisible,
+            prefixIcon: Icons.lock_outlined,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isPasswordVisible = !_isPasswordVisible;
+                });
+              },
+            ),
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return 'يرجى إدخال كلمة المرور';
+              }
+              if (value!.length < 6) {
+                return 'يجب أن تكون كلمة المرور 6 أحرف على الأقل';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          CustomButton(
+            text: 'إنشاء حساب',
+            onPressed: _handleRegister,
+          ),
+        ],
+      ),
     );
   }
 

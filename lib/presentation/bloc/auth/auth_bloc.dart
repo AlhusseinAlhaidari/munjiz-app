@@ -167,6 +167,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // final LocalStorageService _localStorage;
 
   AuthBloc() : super(AuthInitial()) {
+
+
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onAuthLoginRequested);
     on<AuthRegisterRequested>(_onAuthRegisterRequested);

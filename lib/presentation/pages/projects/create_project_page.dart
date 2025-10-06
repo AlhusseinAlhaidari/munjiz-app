@@ -4,6 +4,7 @@ import '../../../core/themes/app_theme.dart';
 import '../../../domain/entities/service_category.dart';
 import '../../../domain/entities/project.dart';
 import '../../bloc/projects/projects_bloc.dart';
+import '../../bloc/service_category/service_category_bloc.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/loading_overlay.dart';
@@ -29,62 +30,13 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   TimeOfDay? _preferredTime;
   List<String> _selectedImages = [];
 
-  final List<ServiceCategory> _categories = [
-    ServiceCategory(
-      id: '1',
-      name: 'تنظيف المنزل',
-      description: 'خدمات تنظيف شاملة للمنزل',
-      icon: 'cleaning',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    ServiceCategory(
-      id: '2',
-      name: 'صيانة كهربائية',
-      description: 'إصلاح وصيانة الأجهزة الكهربائية',
-      icon: 'electrical',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    ServiceCategory(
-      id: '3',
-      name: 'سباكة',
-      description: 'إصلاح وصيانة السباكة',
-      icon: 'plumbing',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    ServiceCategory(
-      id: '4',
-      name: 'نجارة',
-      description: 'أعمال النجارة والأثاث',
-      icon: 'carpentry',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    ServiceCategory(
-      id: '5',
-      name: 'دهان',
-      description: 'دهان الجدران والأسقف',
-      icon: 'painting',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    ServiceCategory(
-      id: '6',
-      name: 'تكييف',
-      description: 'صيانة وتركيب أجهزة التكييف',
-      icon: 'ac',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-  ];
+
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<ServiceCategoryBloc>().add(const LoadServiceCategories());
+  }
 
   @override
   void dispose() {
@@ -115,15 +67,13 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         categoryId: _selectedCategory!.id,
         clientId: 'current_user_id', // Should come from auth state
         budget: double.tryParse(_budgetController.text) ?? 0,
-        location: _locationController.text.trim(),
-        priority: _selectedPriority,
         status: ProjectStatus.pending,
+        priority: _selectedPriority,
+        type: ProjectType.oneTime,
         preferredDate: _preferredDate,
-        preferredTime: _preferredTime?.format(context),
-        images: _selectedImages,
-        notes: _notesController.text.trim(),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+
       );
 
       context.read<ProjectsBloc>().add(ProjectCreateRequested(project: project));
@@ -306,76 +256,92 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
   }
 
   Widget _buildCategorySelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'فئة الخدمة',
-          style: AppTheme.headingMedium,
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1,
-          ),
-          itemCount: _categories.length,
-          itemBuilder: (context, index) {
-            final category = _categories[index];
-            final isSelected = _selectedCategory?.id == category.id;
-            
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedCategory = category;
-                });
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryColor : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+    return BlocBuilder<ServiceCategoryBloc, ServiceCategoryState>(
+      builder: (context, state) {
+        List<ServiceCategory> categories = [];
+        if (state is ServiceCategoryLoaded) {
+          categories = state.categories;
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'فئة الخدمة',
+              style: AppTheme.headingMedium,
+            ),
+            const SizedBox(height: 16),
+            if (state is ServiceCategoryLoading) 
+              const Center(child: CircularProgressIndicator()) 
+            else if (state is ServiceCategoryError) 
+              Center(child: Text('Error loading categories: ${state.message}'))
+            else if (categories.isEmpty)
+              const Center(child: Text('لا توجد فئات خدمات متاحة'))
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _getCategoryIcon(category.icon),
-                      size: 32,
-                      color: isSelected ? Colors.white : AppTheme.primaryColor,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      category.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                        color: isSelected ? Colors.white : AppTheme.textColor,
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+                  final isSelected = _selectedCategory?.id == category.id;
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedCategory = category;
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppTheme.primaryColor : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? AppTheme.primaryColor : AppTheme.borderColor,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      textAlign: TextAlign.center,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _getCategoryIcon(category.iconUrl),
+                            size: 32,
+                            color: isSelected ? Colors.white : AppTheme.primaryColor,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            category.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: isSelected ? Colors.white : AppTheme.primaryTextColor,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-            );
-          },
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
@@ -498,9 +464,9 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
                               ),
                             ),
                             Text(
-                              _preferredDate != null
-                                  ? '${_preferredDate!.day}/${_preferredDate!.month}/${_preferredDate!.year}'
-                                  : 'اختر التاريخ',
+                              _preferredDate == null
+                                  ? 'اختر تاريخ'
+                                  : '${_preferredDate!.day}/${_preferredDate!.month}/${_preferredDate!.year}',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -550,9 +516,9 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
                               ),
                             ),
                             Text(
-                              _preferredTime != null
-                                  ? _preferredTime!.format(context)
-                                  : 'اختر الوقت',
+                              _preferredTime == null
+                                  ? 'اختر وقت'
+                                  : _preferredTime!.format(context),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
@@ -583,15 +549,9 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         const SizedBox(height: 16),
         CustomTextField(
           controller: _locationController,
-          label: 'عنوان المشروع',
-          hint: 'مثال: الرياض، حي النرجس، شارع الملك فهد',
+          label: 'عنوان المشروع (اختياري)',
+          hint: 'مثال: الرياض، حي الملز',
           prefixIcon: Icons.location_on,
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'يرجى إدخال عنوان المشروع';
-            }
-            return null;
-          },
         ),
       ],
     );
@@ -602,52 +562,42 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'الصور (اختياري)',
+          'صور توضيحية (اختياري)',
           style: AppTheme.headingMedium,
         ),
         const SizedBox(height: 16),
-        Container(
-          height: 120,
-          decoration: BoxDecoration(
-            border: Border.all(color: AppTheme.borderColor, style: BorderStyle.solid),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: InkWell(
-            onTap: () {
-              // Handle image selection
-              _selectImages();
-            },
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_photo_alternate,
-                    size: 48,
-                    color: AppTheme.primaryColor,
+        GestureDetector(
+          onTap: () {
+            // TODO: Implement image picker
+          },
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.borderColor),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.add_a_photo_outlined,
+                  size: 40,
+                  color: Colors.grey[600],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'أضف صورًا للمشروع',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    'اضغط لإضافة صور',
-                    style: TextStyle(
-                      color: AppTheme.secondaryTextColor,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-        if (_selectedImages.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            'تم اختيار ${_selectedImages.length} صورة',
-            style: const TextStyle(
-              color: AppTheme.primaryColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -663,8 +613,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         const SizedBox(height: 16),
         CustomTextField(
           controller: _notesController,
-          label: 'ملاحظات',
-          hint: 'أي تفاصيل إضافية أو متطلبات خاصة...',
+          label: 'ملاحظاتك الإضافية (اختياري)',
+          hint: 'أي تفاصيل أخرى تود إضافتها...',
           prefixIcon: Icons.note,
           maxLines: 3,
         ),
@@ -672,8 +622,8 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
     );
   }
 
-  IconData _getCategoryIcon(String iconName) {
-    switch (iconName) {
+    IconData _getCategoryIcon(String iconUrl) {
+    switch (iconUrl) {
       case 'cleaning':
         return Icons.cleaning_services;
       case 'electrical':
@@ -687,7 +637,7 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
       case 'ac':
         return Icons.ac_unit;
       default:
-        return Icons.home_repair_service;
+        return Icons.category;
     }
   }
 
@@ -703,18 +653,5 @@ class _CreateProjectPageState extends State<CreateProjectPage> {
         return 'عاجلة';
     }
   }
-
-  void _selectImages() {
-    // Mock image selection
-    setState(() {
-      _selectedImages = ['image1.jpg', 'image2.jpg'];
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('تم اختيار الصور (محاكاة)'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 }
+

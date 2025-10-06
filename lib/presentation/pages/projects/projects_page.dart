@@ -220,18 +220,33 @@ class _ProjectsPageState extends State<ProjectsPage>
         break;
       case ProjectStatus.inProgress:
         statusColor = Colors.blue;
-        statusIcon = Icons.work;
+        statusIcon = Icons.work_outline;
         statusText = 'قيد التنفيذ';
         break;
       case ProjectStatus.completed:
         statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
-        statusText = 'مكتمل';
+        statusIcon = Icons.check_circle_outline;
+        statusText = 'مكتملة';
         break;
       case ProjectStatus.cancelled:
         statusColor = Colors.red;
         statusIcon = Icons.cancel;
         statusText = 'ملغي';
+        break;
+      case ProjectStatus.draft:
+        statusColor = Colors.grey;
+        statusIcon = Icons.edit_note;
+        statusText = 'مسودة';
+        break;
+      case ProjectStatus.published:
+        statusColor = Colors.blueAccent;
+        statusIcon = Icons.public;
+        statusText = 'منشور';
+        break;
+      case ProjectStatus.disputed:
+        statusColor = Colors.deepOrange;
+        statusIcon = Icons.gavel;
+        statusText = 'متنازع عليه';
         break;
     }
 
@@ -333,7 +348,7 @@ class _ProjectsPageState extends State<ProjectsPage>
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      project.location,
+                      project.location?.address ?? 'غير محدد',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[600],
@@ -457,31 +472,41 @@ class _ProjectsPageState extends State<ProjectsPage>
         minChildSize: 0.5,
         expand: false,
         builder: (context, scrollController) {
-          return Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
+          return SingleChildScrollView(
+            controller: scrollController,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Title
+                  Text(
+                    project.title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                 ),
-                
-                const SizedBox(height: 20),
-                
-                // Title
+                const SizedBox(height: 8),
                 Text(
-                  project.title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                  project.description,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
                   ),
                 ),
                 
@@ -494,18 +519,12 @@ class _ProjectsPageState extends State<ProjectsPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildDetailRow('الوصف', project.description),
-                        _buildDetailRow('الميزانية', '${project.budget.toStringAsFixed(0)} ريال'),
-                        _buildDetailRow('الموقع', project.location),
-                        _buildDetailRow('تاريخ الإنشاء', 
-                          '${project.createdAt.day}/${project.createdAt.month}/${project.createdAt.year}'),
+                        _buildDetailRow("الميزانية", project.budget.toStringAsFixed(0) + " ريال"),
+                        _buildDetailRow("الموقع", project.location?.address ?? "غير محدد"),
+                        _buildDetailRow("تاريخ الإنشاء", 
+                           '${project.createdAt.day}/${project.createdAt.month}/${project.createdAt.year}'),
                         if (project.preferredDate != null)
-                          _buildDetailRow('التاريخ المفضل', 
-                            '${project.preferredDate!.day}/${project.preferredDate!.month}/${project.preferredDate!.year}'),
-                        if (project.preferredTime != null)
-                          _buildDetailRow('الوقت المفضل', project.preferredTime!),
-                        if (project.notes?.isNotEmpty ?? false)
-                          _buildDetailRow('ملاحظات', project.notes!),
+                          _buildDetailRow("التاريخ المفضل", '${project.preferredDate!.day}/${project.preferredDate!.month}/${project.preferredDate!.year}'),
                       ],
                     ),
                   ),
@@ -518,17 +537,17 @@ class _ProjectsPageState extends State<ProjectsPage>
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.of(context).pop();
+                          Navigator.pop(context);
                           _editProject(project);
                         },
-                        child: const Text('تعديل'),
+                        child: const Text('تعديل المشروع'),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.of(context).pop();
+                          Navigator.pop(context);
                           _viewOffers(project);
                         },
                         style: ElevatedButton.styleFrom(
@@ -548,39 +567,41 @@ class _ProjectsPageState extends State<ProjectsPage>
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  void _editProject(Project project) {
+    // Navigate to edit project page
+    // Navigator.of(context).pushNamed('/edit-project', arguments: project);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('وظيفة التعديل غير متوفرة حاليًا.')),
+    );
+  }
+
+  void _viewOffers(Project project) {
+    // Navigate to offers page for this project
+    // Navigator.of(context).pushNamed('/project-offers', arguments: project);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('وظيفة عرض العروض غير متوفرة حاليًا.')),
+    );
+  }
+
+  Widget _buildDetailRow(String title, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            title,
             style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-            ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(value),
           ),
         ],
       ),
     );
   }
-
-  void _editProject(Project project) {
-    // Navigate to edit project page
-    print('Edit project: ${project.title}');
-  }
-
-  void _viewOffers(Project project) {
-    // Navigate to offers page
-    print('View offers for project: ${project.title}');
-  }
 }
+

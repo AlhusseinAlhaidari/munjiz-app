@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/themes/app_theme.dart';
@@ -7,7 +8,7 @@ import '../../widgets/loading_overlay.dart';
 
 class ChatDetailPage extends StatefulWidget {
   final Chat chat;
-  
+
   const ChatDetailPage({
     super.key,
     required this.chat,
@@ -16,6 +17,8 @@ class ChatDetailPage extends StatefulWidget {
   @override
   State<ChatDetailPage> createState() => _ChatDetailPageState();
 }
+
+
 
 class _ChatDetailPageState extends State<ChatDetailPage> {
   final _messageController = TextEditingController();
@@ -26,7 +29,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadMessages();
+    context.read<ChatBloc>().add(ChatMessagesLoadRequested(chatId: widget.chat.id));
   }
 
   @override
@@ -34,64 +37,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _loadMessages() {
-    // Mock messages data
-    _messages = [
-      Message(
-        id: 'msg_1',
-        senderId: 'provider_1',
-        content: 'مرحباً، شاهدت مشروعك وأنا مهتم بتنفيذه',
-        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-        type: MessageType.text,
-      ),
-      Message(
-        id: 'msg_2',
-        senderId: 'current_user',
-        content: 'أهلاً وسهلاً، ما هي خبرتك في هذا المجال؟',
-        timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 45)),
-        type: MessageType.text,
-      ),
-      Message(
-        id: 'msg_3',
-        senderId: 'provider_1',
-        content: 'لدي خبرة 5 سنوات في مجال التنظيف المنزلي وأعمل مع عدة شركات',
-        timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 30)),
-        type: MessageType.text,
-      ),
-      Message(
-        id: 'msg_4',
-        senderId: 'provider_1',
-        content: 'يمكنني إنجاز العمل خلال يومين بجودة عالية',
-        timestamp: DateTime.now().subtract(const Duration(hours: 1, minutes: 25)),
-        type: MessageType.text,
-      ),
-      Message(
-        id: 'msg_5',
-        senderId: 'current_user',
-        content: 'ممتاز، ما هو السعر المطلوب؟',
-        timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-        type: MessageType.text,
-      ),
-      Message(
-        id: 'msg_6',
-        senderId: 'provider_1',
-        content: '800 ريال شامل المواد والعمالة',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
-        type: MessageType.text,
-      ),
-      Message(
-        id: 'msg_7',
-        senderId: 'current_user',
-        content: 'السعر مناسب، متى يمكنك البدء؟',
-        timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-        type: MessageType.text,
-      ),
-    ];
-    
-    setState(() {});
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -110,19 +55,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
 
-    final newMessage = Message(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      senderId: 'current_user',
-      content: content,
-      timestamp: DateTime.now(),
-      type: MessageType.text,
-    );
+    context.read<ChatBloc>().add(ChatMessageSent(
+          chatId: widget.chat.id,
+          senderId: 'current_user',
+          content: content,
+        ));
 
-    setState(() {
-      _messages.add(newMessage);
-      _messageController.clear();
-    });
-
+    _messageController.clear();
     _scrollToBottom();
 
     // Simulate provider response
@@ -142,20 +81,17 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           'ممتاز، سأحضر جميع المعدات اللازمة',
           'لا توجد مشكلة، يمكنني التكيف مع وقتك',
         ];
-        
+
         final randomResponse = responses[DateTime.now().millisecond % responses.length];
-        
-        final providerMessage = Message(
-          id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-          senderId: 'provider_1',
-          content: randomResponse,
-          timestamp: DateTime.now(),
-          type: MessageType.text,
-        );
+
+        context.read<ChatBloc>().add(ChatMessageSent(
+              chatId: widget.chat.id,
+              senderId: 'provider_1',
+              content: randomResponse,
+            ));
 
         setState(() {
           _isTyping = false;
-          _messages.add(providerMessage);
         });
 
         _scrollToBottom();
@@ -168,10 +104,26 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final providerName = widget.chat.metadata['providerName'] as String;
     final projectTitle = widget.chat.metadata['projectTitle'] as String;
 
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<ChatBloc, ChatState>(
+      listener: (context, state) {
+        if (state is ChatMessagesLoaded) {
+          _messages = state.messages;
+          _scrollToBottom();
+        } else if (state is ChatMessageSentSuccess) {
+          // Add the new message to the list if it's not already there (to avoid duplicates from mock response)
+          if (!_messages.any((msg) => msg.id == state.message.id)) {
+            _messages.add(state.message);
+          }
+          _scrollToBottom();
+        } else if (state is ChatError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: ${state.failure.message}")),
+          );
+        }
+      },
       builder: (context, state) {
         return LoadingOverlay(
-          isLoading: state is AuthLoading,
+          isLoading: state is ChatLoading,
           child: Scaffold(
             appBar: AppBar(
               title: Column(
@@ -208,10 +160,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 Expanded(
                   child: _buildMessagesList(),
                 ),
-                
+
                 // Typing Indicator
                 if (_isTyping) _buildTypingIndicator(),
-                
+
                 // Message Input
                 _buildMessageInput(),
               ],
@@ -230,12 +182,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       itemBuilder: (context, index) {
         final message = _messages[index];
         final isCurrentUser = message.senderId == 'current_user';
-        final showTimestamp = index == 0 || 
-            _messages[index - 1].timestamp.difference(message.timestamp).inMinutes.abs() > 5;
+        final showTimestamp = index == 0 ||
+            _messages[index - 1].createdAt.difference(message.createdAt).inMinutes.abs() > 5;
 
         return Column(
           children: [
-            if (showTimestamp) _buildTimestamp(message.timestamp),
+            if (showTimestamp) _buildTimestamp(message.createdAt),
             _buildMessageBubble(message, isCurrentUser),
           ],
         );
@@ -294,13 +246,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   Text(
                     message.content,
                     style: TextStyle(
-                      color: isCurrentUser ? Colors.white : AppTheme.textColor,
+                      color: isCurrentUser ? Colors.white : AppTheme.primaryTextColor,
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatTime(message.timestamp),
+                    _formatTime(message.createdAt),
                     style: TextStyle(
                       color: isCurrentUser ? Colors.white70 : Colors.grey[600],
                       fontSize: 10,
@@ -472,6 +424,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     }
   }
 
+  void _showChatInfo() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('معلومات المحادثة (قيد التطوير)')),
+    );
+  }
+
   void _showChatOptions() {
     showModalBottomSheet(
       context: context,
@@ -484,36 +442,34 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('معلومات المحادثة'),
+              leading: const Icon(Icons.work_outline),
+              title: const Text("عرض المشروع"),
               onTap: () {
                 Navigator.of(context).pop();
-                _showChatInfo();
+                // Navigate to project details page
               },
             ),
             ListTile(
-              leading: const Icon(Icons.block),
-              title: const Text('حظر المستخدم'),
+              leading: const Icon(Icons.check_circle_outline),
+              title: const Text("تحديد كمكتمل"),
               onTap: () {
                 Navigator.of(context).pop();
-                _blockUser();
+                // Mark project as complete
               },
             ),
             ListTile(
-              leading: const Icon(Icons.report),
-              title: const Text('الإبلاغ عن مشكلة'),
+              leading: const Icon(Icons.cancel_outlined),
+              title: const Text("إلغاء المشروع"),
               onTap: () {
                 Navigator.of(context).pop();
-                _reportUser();
+                // Cancel project
               },
             ),
+            const Divider(),
             ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('حذف المحادثة', style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.of(context).pop();
-                _deleteChat();
-              },
+              leading: const Icon(Icons.close),
+              title: const Text("إغلاق"),
+              onTap: () => Navigator.of(context).pop(),
             ),
           ],
         ),
@@ -533,95 +489,32 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo),
-              title: const Text('صورة'),
+              leading: const Icon(Icons.photo_library),
+              title: const Text("إرسال صورة"),
               onTap: () {
                 Navigator.of(context).pop();
-                _attachImage();
+                // Implement image picking logic
               },
             ),
             ListTile(
-              leading: const Icon(Icons.attach_file),
-              title: const Text('ملف'),
+              leading: const Icon(Icons.insert_drive_file),
+              title: const Text("إرسال ملف"),
               onTap: () {
                 Navigator.of(context).pop();
-                _attachFile();
+                // Implement file picking logic
               },
             ),
             ListTile(
               leading: const Icon(Icons.location_on),
-              title: const Text('الموقع'),
+              title: const Text("إرسال موقع"),
               onTap: () {
                 Navigator.of(context).pop();
-                _shareLocation();
+                // Implement location sharing logic
               },
             ),
           ],
         ),
       ),
-    );
-  }
-
-  void _showChatInfo() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('معلومات المحادثة (قيد التطوير)')),
-    );
-  }
-
-  void _blockUser() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم حظر المستخدم (محاكاة)')),
-    );
-  }
-
-  void _reportUser() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم الإبلاغ عن المستخدم (محاكاة)')),
-    );
-  }
-
-  void _deleteChat() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('حذف المحادثة'),
-        content: const Text('هل أنت متأكد من حذف هذه المحادثة؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم حذف المحادثة (محاكاة)')),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('حذف', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _attachImage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إرفاق صورة (محاكاة)')),
-    );
-  }
-
-  void _attachFile() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إرفاق ملف (محاكاة)')),
-    );
-  }
-
-  void _shareLocation() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم مشاركة الموقع (محاكاة)')),
     );
   }
 }
