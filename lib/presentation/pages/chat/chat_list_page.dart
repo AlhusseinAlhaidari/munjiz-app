@@ -158,11 +158,9 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   Widget _buildChatList() {
-    return RefreshIndicator(
-      onRefresh: () async {
-    
-      },
-      child: ListView.builder(
+    return RefreshI      onRefresh: () async {
+        context.read<ChatBloc>().add(const ChatLoadRequested(userId: 'current_user'));
+      },child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _filteredChats.length,
         itemBuilder: (context, index) {
