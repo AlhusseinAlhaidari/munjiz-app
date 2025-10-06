@@ -52,19 +52,21 @@ class _SplashPageState extends State<SplashPage>
 
   void _navigateAfterDelay() {
     Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _navigateBasedOnAuthState();
-      }
+      if (!mounted) return;
+      _navigateBasedOnAuthState();
     });
   }
 
   void _navigateBasedOnAuthState() {
+    // Ensure context is still valid before accessing it
+    if (!mounted) return;
     final authState = context.read<AuthBloc>().state;
     
     if (authState is AuthAuthenticated) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed("/home");
     } else {
-      Navigator.of(context).pushReplacementNamed('/login');
+      Navigator.of(context).pushReplacementNamed("/login");
     }
   }
 
@@ -81,15 +83,13 @@ class _SplashPageState extends State<SplashPage>
         // Handle auth state changes during splash
         if (state is AuthAuthenticated) {
           Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed('/home');
-            }
+            if (!mounted) return;
+            Navigator.of(context).pushReplacementNamed('/home');
           });
         } else if (state is AuthUnauthenticated) {
           Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed('/login');
-            }
+            if (!mounted) return;
+            Navigator.of(context).pushReplacementNamed("/login");
           });
         }
       },
@@ -205,3 +205,4 @@ class _SplashPageState extends State<SplashPage>
     );
   }
 }
+
