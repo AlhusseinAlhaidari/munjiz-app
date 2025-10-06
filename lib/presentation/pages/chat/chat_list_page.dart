@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../domain/entities/chat.dart';
-import '../../bloc/auth/auth_bloc.dart';
+
 import '../../widgets/loading_overlay.dart';
 
 class ChatListPage extends StatefulWidget {
@@ -160,7 +160,7 @@ class _ChatListPageState extends State<ChatListPage> {
   Widget _buildChatList() {
     return RefreshIndicator(
       onRefresh: () async {
-        _loadChats();
+    
       },
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),

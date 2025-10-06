@@ -109,6 +109,7 @@ class AppTheme {
         surface: surfaceColor,
         background: backgroundColor,
         error: errorColor,
+        onBackground: primaryTextColor,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: primaryTextColor,
@@ -131,7 +132,7 @@ class AppTheme {
       ),
       
       // Card Theme
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         color: cardColor,
         elevation: 2,
         shadowColor: shadowColor,
@@ -251,6 +252,7 @@ class AppTheme {
         surface: Color(0xFF121212),
         background: Color(0xFF000000),
         error: errorColor,
+        onBackground: Colors.white,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: Colors.white,
